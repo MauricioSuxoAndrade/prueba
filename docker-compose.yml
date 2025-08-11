@@ -1,0 +1,66 @@
+version: "3.9"
+
+services:
+  n8n:
+    image: n8nio/n8n
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=admin
+      - N8N_BASIC_AUTH_PASSWORD=1234
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - TZ=America/La_Paz  
+      - WEBHOOK_TUNNEL_URL=https://4482f9ceda9c.ngrok-free.app
+    volumes:
+      - ./archivos:/data
+      - ./n8n-config:/home/node/.n8n
+      - C:/Users/smith/Documents/n8n-docker:/files
+    restart: unless-stopped
+    networks:
+      - qdrant-net
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    restart: always
+    container_name: qdrant
+    ports:
+      - 6333:6333
+      - 6334:6334
+    expose:
+      - 6333
+      - 6334
+      - 6335
+    configs:
+      - source: qdrant_config
+        target: /qdrant/config/production.yaml
+    volumes:
+      - ./qdrant_data:/qdrant/storage
+    networks:
+      - qdrant-net
+    environment:
+      - QDRANT_API_KEY=test
+    
+  ollama:
+    image: ollama/ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    networks:
+      - qdrant-net
+    volumes:
+      - ollama_data:/root/.ollama
+
+
+configs:
+  qdrant_config:
+    content: |
+      log_level: INFO
+
+networks:
+  qdrant-net:
+    driver: bridge
+
+volumes:
+  ollama_data:
